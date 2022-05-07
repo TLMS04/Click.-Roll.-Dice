@@ -1,9 +1,10 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json;
 using System.IO;
 using UnityEngine.Events;
+using System;
+using System.Globalization;
 
 public static class Save 
 {
@@ -16,13 +17,15 @@ public static class Save
         GameData gameData = GameData.GetInstance();
         loadData.Score = gameData.Score;
         loadData.BonusScoreToRoll = gameData.BonusScoreToRoll;
-        loadData.HoursAfkFarm = gameData.HoursAfkFarm;
+        loadData.SecondsAfkFarm = gameData.SecondsAfkFarm;
+        loadData.LastVisit = DateTime.UtcNow.ToString("u", CultureInfo.InvariantCulture);
+        Debug.LogWarning(loadData.LastVisit);
         loadData.CountUpgrade = gameData.CountUpgrade;
-        loadData.DiceAfkfarm = gameData.DiceAfkfarm;
+        loadData.DiceAfkFarm = gameData.DiceAfkFarm;
         loadData.Dices = gameData.Dices;
         File.WriteAllText(
             SavePath + "/Save.json",
-            JsonConvert.SerializeObject(GameData.GetInstance(), Formatting.Indented, new JsonSerializerSettings()
+            JsonConvert.SerializeObject(loadData, Formatting.Indented, new JsonSerializerSettings()
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore //Отмена залупливания обращений 
             })
@@ -30,15 +33,28 @@ public static class Save
     }
     public static void Load()
     {
-        LoadData loadData = JsonConvert.DeserializeObject<LoadData>(File.ReadAllText(SavePath + "/Save.json"));
+        LoadData loadData;
+        try
+        {
+            loadData = JsonConvert.DeserializeObject<LoadData>(File.ReadAllText(SavePath + "/Save.json"));
+        }
+        catch (FileNotFoundException)
+        {
+
+            return;
+        }
+        
         if (loadData != null)
         {
             GameData gameData = GameData.GetInstance();
             gameData.Score = loadData.Score;
             gameData.BonusScoreToRoll = loadData.BonusScoreToRoll;
-            gameData.HoursAfkFarm = loadData.HoursAfkFarm;
+            gameData.SecondsAfkFarm = loadData.SecondsAfkFarm;
+            gameData.LastVisit = loadData.LastVisit;
+            Debug.LogError(loadData.LastVisit);
+            Debug.LogError(gameData.LastVisit);
             gameData.CountUpgrade = loadData.CountUpgrade;
-            gameData.DiceAfkfarm = loadData.DiceAfkfarm;
+            gameData.DiceAfkFarm = loadData.DiceAfkFarm;
             gameData.Dices = loadData.Dices;
             ScoreChanged?.Invoke(gameData.Score);
         }
@@ -50,7 +66,8 @@ public class LoadData {
     public long Score { get; set; }
     public ushort BonusScoreToRoll { get; set; }
     public List<DiceEnum> Dices { get; set; }
-    public DiceEnum DiceAfkfarm { get; set; }
-    public ushort HoursAfkFarm { get; set; }
+    public DiceEnum DiceAfkFarm { get; set; }
+    public int SecondsAfkFarm { get; set; }
+    public string LastVisit { get; set; }
     public uint CountUpgrade { get; set; }
 }

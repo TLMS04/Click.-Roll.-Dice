@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -23,10 +22,12 @@ public class GameUI : MonoBehaviour
     public UnityEvent UpgradeDiceButtonClick = new UnityEvent();
     public UnityEvent HoursAfkFarmButtonClick = new UnityEvent();
     public UnityEvent UpgradeHoursAfkFarmButtonClick = new UnityEvent();
-    void Start()
+    private void Awake()
     {
         Save.ScoreChanged.AddListener(OnScoreChanged);
-        Save.Load();
+    }
+    void Start()
+    {
         Game.ScoreChanged.AddListener(OnScoreChanged);
         Game.BonusScoreChanged.AddListener(OnBonusScoreChanged);
         SetSpriteDice();

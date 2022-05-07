@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using System.Linq;
+using System.Globalization;
+
 public class Game : MonoBehaviour
 {
     private static GameData _gameData;
@@ -15,18 +17,27 @@ public class Game : MonoBehaviour
     [SerializeField] private uint _maxCountDices = 20;
     public static UnityEvent<long> ScoreChanged = new UnityEvent<long>();
     public static UnityEvent<ushort> BonusScoreChanged = new UnityEvent<ushort>();
-
+    private void Awake()
+    {
+        Save.Load();
+    }
     void Start()
     {
         _gameData = GameData.GetInstance();
         _gameUI.UpgradeDiceButtonClick.AddListener(UpgradeDice);
+        ScoringAfk();
         //_gameUI.HoursAfkFarmButtonClick.AddListener();
         //_gameUI.UpgradeHoursAfkFarmButtonClick.AddListener();
     }
-    void OnApplicationPause()
+    void OnDisable()
     {
+        if (_gameData.SecondsAfkFarm == 0)
+        {
+            _gameData.SecondsAfkFarm = Dice.RollDice(_gameData.DiceAfkFarm) * 60 * 60;
+        }
         Save.SaveData();
     }
+
     public static void IncreaseScore()
     {
         int sum = 0;
@@ -40,8 +51,40 @@ public class Game : MonoBehaviour
         Debug.LogError(sum);
         _gameData.Score += sum;
         ScoreChanged?.Invoke(_gameData.Score);
-    }
 
+
+        Save.SaveData();
+    }
+    private void ScoringAfk()
+    {
+        if (_gameData.LastVisit == null)
+        {
+            return;
+        }
+        DateTime lastVisit = DateTime.ParseExact(_gameData.LastVisit, "u", CultureInfo.InvariantCulture);
+        TimeSpan timePassed = DateTime.UtcNow - lastVisit;
+        int secondsPassed = (int)timePassed.TotalSeconds;
+        secondsPassed = Mathf.Clamp(secondsPassed, 0, _gameData.SecondsAfkFarm);
+        float sumAverageDicesValue = 0;
+        foreach (var item in _gameData.Dices)
+        {
+            sumAverageDicesValue += (((float)item) / 2) + 0.5f + _gameData.BonusScoreToRoll;
+            Debug.Log(sumAverageDicesValue);
+        }
+        Debug.Log(secondsPassed);
+        int score = Mathf.RoundToInt(sumAverageDicesValue * secondsPassed);
+        Debug.Log(score);
+        _gameData.Score += score;
+        if(secondsPassed == _gameData.SecondsAfkFarm)
+        {
+            _gameData.SecondsAfkFarm = 0;
+        }
+        else
+        {
+            _gameData.SecondsAfkFarm -= secondsPassed;
+        }
+        ScoreChanged?.Invoke(_gameData.Score);
+    }
     private void UpgradeDice()
     {
         var actualCostUpgradeDice = _costUpgradeDice * _gameData.CountUpgrade;
