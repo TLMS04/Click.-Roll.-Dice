@@ -51,9 +51,6 @@ public class Game : MonoBehaviour
         Debug.LogError(sum);
         _gameData.Score += sum;
         ScoreChanged?.Invoke(_gameData.Score);
-
-
-        Save.SaveData();
     }
     private void ScoringAfk()
     {
