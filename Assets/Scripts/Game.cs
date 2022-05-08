@@ -17,6 +17,10 @@ public class Game : MonoBehaviour
     [SerializeField] private uint _maxCountDices = 20;
     public static UnityEvent<long> ScoreChanged = new UnityEvent<long>();
     public static UnityEvent<ushort> BonusScoreChanged = new UnityEvent<ushort>();
+    public static UnityEvent DiceAfkChanged = new UnityEvent();
+
+    public static UnityEvent<long> CostUpgradeDiceChanged = new UnityEvent<long>();
+    public static UnityEvent<long> CostUpgradeDiceAfkChanged = new UnityEvent<long>();
     private void Awake()
     {
         Save.Load();
@@ -25,9 +29,10 @@ public class Game : MonoBehaviour
     {
         _gameData = GameData.GetInstance();
         _gameUI.UpgradeDiceButtonClick.AddListener(UpgradeDice);
+       _gameUI.UpgradeDiceAfkFarmButtonClick.AddListener(UpgradeDiceAfk);
         ScoringAfk();
-        //_gameUI.HoursAfkFarmButtonClick.AddListener();
-        //_gameUI.UpgradeHoursAfkFarmButtonClick.AddListener();
+        CostUpgradeDiceChanged?.Invoke(_costUpgradeDice * _gameData.CountUpgrade);
+        CostUpgradeDiceAfkChanged?.Invoke(_costUpgradeDice * _gameData.CountUpgrade * _costUpgradeDice);
     }
     void OnDisable()
     {
@@ -44,8 +49,15 @@ public class Game : MonoBehaviour
         ushort bouns = _gameData.BonusScoreToRoll;
         foreach (var item in _gameData.Dices)
         {
-            var resultRoll = Dice.RollDice(item) + bouns;
-            sum += resultRoll;
+            var resultRoll = Dice.RollDice(item);
+            if(resultRoll == 20) // Тут вызвать метод анимации критического успеха
+            {
+                resultRoll = 40;
+            }else if(resultRoll == 1) // Тут вызвать метод анимации критического провала
+            {
+                resultRoll = -20;
+            }
+            sum += resultRoll + bouns;
             Debug.LogError($"{item.ToString()} = {resultRoll}");
         }
         Debug.LogError(sum);
@@ -107,6 +119,35 @@ public class Game : MonoBehaviour
             _gameData.CountUpgrade++;
             _gameData.Dices = dices;
             ScoreChanged?.Invoke(_gameData.Score);
+            CostUpgradeDiceChanged?.Invoke(_costUpgradeDice * _gameData.CountUpgrade);
+            CostUpgradeDiceAfkChanged?.Invoke(_costUpgradeDice * _gameData.CountUpgrade * _costUpgradeDice);
+        }
+    }
+
+    private void UpgradeDiceAfk()
+    {
+        
+        var actualCostUpgradeDice = _costUpgradeDice * _gameData.CountUpgrade * _costUpgradeDice;
+        if (actualCostUpgradeDice <= _gameData.Score)
+        {
+            _gameData.Score -= actualCostUpgradeDice;
+            DiceEnum diceAfk = _gameData.DiceAfkFarm;
+            var diceEnumArray = Enum.GetValues(typeof(DiceEnum)).Cast<DiceEnum>().ToArray();
+            if (diceAfk == DiceEnum.d12)
+            {
+                return;
+            }
+            else if (diceAfk != DiceEnum.d12)
+            {
+                diceAfk = diceEnumArray[Array.BinarySearch(diceEnumArray, diceAfk) + 1];
+            }
+            _gameData.CountUpgrade++;
+            _gameData.DiceAfkFarm = diceAfk;
+            ScoreChanged?.Invoke(_gameData.Score);
+            DiceAfkChanged?.Invoke();
+
+            CostUpgradeDiceChanged?.Invoke(_costUpgradeDice * _gameData.CountUpgrade);
+            CostUpgradeDiceAfkChanged?.Invoke(_costUpgradeDice * _gameData.CountUpgrade * _costUpgradeDice);
         }
     }
 }
