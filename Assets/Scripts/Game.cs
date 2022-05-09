@@ -50,10 +50,10 @@ public class Game : MonoBehaviour
         foreach (var item in _gameData.Dices)
         {
             var resultRoll = Dice.RollDice(item);
-            if(resultRoll == 20) // Тут вызвать метод анимации критического успеха
+            if(resultRoll == 20 && item == DiceEnum.d20) // Тут вызвать метод анимации критического успеха
             {
                 resultRoll = 40;
-            }else if(resultRoll == 1) // Тут вызвать метод анимации критического провала
+            }else if(resultRoll == 1 && item == DiceEnum.d20) // Тут вызвать метод анимации критического провала
             {
                 resultRoll = -20;
             }

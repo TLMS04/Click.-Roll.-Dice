@@ -585,6 +585,8 @@ MonoBehaviour:
   - {fileID: -2487092884428481935, guid: 65725c4f1c81cb142bc6147c7e5e42bf, type: 3}
   _scoreText: {fileID: 1286130192}
   _bounsScoreText: {fileID: 47075219}
+  _costDiceUpgradeText: {fileID: 1714466851}
+  _costDiceUpgradeAfkText: {fileID: 665944857}
   _upgradeDiceButton: {fileID: 1128181400}
   _upgradeDiceAfkFarmButton: {fileID: 1833655162}
   UpgradeDiceButtonClick:
